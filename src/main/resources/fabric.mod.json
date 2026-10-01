@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "stackable_carpet",
+  "version": "${version}",
+  "name": "Stackable Carpet",
+  "description": "Carpets stack up to 15 layers high. Breaking removes the layer you aim at, and a full wool carpet stack turns into a wool block.",
+  "authors": ["h3xbits"],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.h3xbit.stackablecarpet.StackableCarpet"
+    ],
+    "fabric-datagen": [
+      "com.h3xbit.stackablecarpet.StackableCarpetDataGenerator"
+    ]
+  },
+  "mixins": [
+    "stackable_carpet.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

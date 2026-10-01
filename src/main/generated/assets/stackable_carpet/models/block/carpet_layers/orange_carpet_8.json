@@ -1,0 +1,6 @@
+{
+  "parent": "stackable_carpet:block/carpet_layers/template_layer_8",
+  "textures": {
+    "wool": "minecraft:block/orange_wool"
+  }
+}
