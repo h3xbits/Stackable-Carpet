@@ -6,7 +6,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.extract.LevelExtractor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -35,7 +34,7 @@ public abstract class CarpetOutlineMixin {
         }
         BlockPos pos = blockHitResult.getBlockPos();
         BlockState state = this.level.getBlockState(pos);
-        if (!(state.getBlock() instanceof CarpetBlock)) {
+        if (!CarpetStacking.isStack(state)) {
             return shape;
         }
         int layers = state.getValue(CarpetStacking.LAYERS);

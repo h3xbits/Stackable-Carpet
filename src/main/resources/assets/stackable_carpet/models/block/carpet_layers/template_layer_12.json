@@ -1,5 +1,5 @@
 {
-  "ambientocclusion": false,
+  "parent": "block/thin_block",
   "textures": {
     "particle": "#wool"
   },
@@ -42,7 +42,8 @@
             16,
             16
           ],
-          "texture": "#wool"
+          "texture": "#wool",
+          "cullface": "north"
         },
         "south": {
           "uv": [
@@ -51,7 +52,8 @@
             16,
             16
           ],
-          "texture": "#wool"
+          "texture": "#wool",
+          "cullface": "south"
         },
         "west": {
           "uv": [
@@ -60,7 +62,8 @@
             16,
             16
           ],
-          "texture": "#wool"
+          "texture": "#wool",
+          "cullface": "west"
         },
         "east": {
           "uv": [
@@ -69,7 +72,8 @@
             16,
             16
           ],
-          "texture": "#wool"
+          "texture": "#wool",
+          "cullface": "east"
         }
       }
     }

@@ -1,0 +1,290 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "1"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_2"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "2"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_3"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "3"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_4"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "4"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_5"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "5"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_6"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "6"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_7"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "7"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_8"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "8"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_9"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "9"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_10"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "10"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_11"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "11"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_12"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "12"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_13"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "13"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_14"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "14"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_15"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "15"
+      }
+    },
+    {
+      "apply": {
+        "model": "stackable_carpet:block/carpet_layers/pale_moss_carpet_16"
+      },
+      "when": {
+        "bottom": "true",
+        "layers": "16"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet"
+      },
+      "when": {
+        "bottom": "false",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall"
+      },
+      "when": {
+        "north": "tall"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_small"
+      },
+      "when": {
+        "north": "low"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall"
+      },
+      "when": {
+        "bottom": "false",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall",
+        "uvlock": true,
+        "y": 90
+      },
+      "when": {
+        "east": "tall"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_small",
+        "uvlock": true,
+        "y": 90
+      },
+      "when": {
+        "east": "low"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall",
+        "uvlock": true,
+        "y": 90
+      },
+      "when": {
+        "bottom": "false",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall",
+        "uvlock": true,
+        "y": 180
+      },
+      "when": {
+        "south": "tall"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_small",
+        "uvlock": true,
+        "y": 180
+      },
+      "when": {
+        "south": "low"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall",
+        "uvlock": true,
+        "y": 180
+      },
+      "when": {
+        "bottom": "false",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall",
+        "uvlock": true,
+        "y": 270
+      },
+      "when": {
+        "west": "tall"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_small",
+        "uvlock": true,
+        "y": 270
+      },
+      "when": {
+        "west": "low"
+      }
+    },
+    {
+      "apply": {
+        "model": "minecraft:block/pale_moss_carpet_side_tall",
+        "uvlock": true,
+        "y": 270
+      },
+      "when": {
+        "bottom": "false",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    }
+  ]
+}

@@ -2,13 +2,10 @@ package com.h3xbit.stackablecarpet.mixin;
 
 import com.h3xbit.stackablecarpet.CarpetStacking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CarpetBlock;
-import net.minecraft.world.level.block.WoolCarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -31,27 +28,12 @@ public class CarpetStackMixin {
     }
 
     protected boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
-        CarpetBlock self = (CarpetBlock) (Object) this;
-        Item heldItem = context.getItemInHand().getItem();
-        if (!(heldItem instanceof BlockItem blockItem) || !(blockItem.getBlock() instanceof CarpetBlock)) {
-            return false;
-        }
-        int layers = state.getValue(CarpetStacking.LAYERS);
-        return layers < CarpetStacking.MAX_LAYERS || self instanceof WoolCarpetBlock;
+        return CarpetStacking.canStackOnto(state, context);
     }
 
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         CarpetBlock self = (CarpetBlock) (Object) this;
-        BlockState existing = context.getLevel().getBlockState(context.getClickedPos());
-        if (existing.getBlock() instanceof CarpetBlock existingCarpet) {
-            int layers = existing.getValue(CarpetStacking.LAYERS);
-            if (layers < CarpetStacking.MAX_LAYERS) {
-                return existing.setValue(CarpetStacking.LAYERS, layers + 1);
-            }
-            if (existingCarpet instanceof WoolCarpetBlock woolCarpet) {
-                return CarpetStacking.woolFor(woolCarpet.getColor()).defaultBlockState();
-            }
-        }
-        return self.defaultBlockState();
+        BlockState stacked = CarpetStacking.stateForPlacingOnto(context, self);
+        return stacked != null ? stacked : self.defaultBlockState();
     }
 }

@@ -12,6 +12,9 @@
     "main": [
       "com.h3xbit.stackablecarpet.StackableCarpet"
     ],
+    "client": [
+      "com.h3xbit.stackablecarpet.StackableCarpetClient"
+    ],
     "fabric-datagen": [
       "com.h3xbit.stackablecarpet.StackableCarpetDataGenerator"
     ]

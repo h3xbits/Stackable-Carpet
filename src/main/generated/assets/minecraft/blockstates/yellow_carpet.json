@@ -21,6 +21,9 @@
     "layers=15": {
       "model": "stackable_carpet:block/carpet_layers/yellow_carpet_15"
     },
+    "layers=16": {
+      "model": "stackable_carpet:block/carpet_layers/yellow_carpet_16"
+    },
     "layers=2": {
       "model": "stackable_carpet:block/carpet_layers/yellow_carpet_2"
     },

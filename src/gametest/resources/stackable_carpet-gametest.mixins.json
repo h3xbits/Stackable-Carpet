@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.h3xbit.stackablecarpet.gametest.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "TestWindowPositionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
