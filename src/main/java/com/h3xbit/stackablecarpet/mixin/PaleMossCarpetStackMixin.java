@@ -34,15 +34,8 @@ public class PaleMossCarpetStackMixin {
         builder.add(CarpetStacking.LAYERS);
     }
 
-    @Inject(method = "getShape", at = @At("RETURN"), cancellable = true)
+    @Inject(method = {"getShape", "getCollisionShape"}, at = @At("RETURN"), cancellable = true)
     private void stackable_carpet$getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
-        if (state.getValue(MossyCarpetBlock.BASE)) {
-            cir.setReturnValue(Shapes.or(cir.getReturnValue(), CarpetStacking.shapeFor(state.getValue(CarpetStacking.LAYERS))));
-        }
-    }
-
-    @Inject(method = "getCollisionShape", at = @At("RETURN"), cancellable = true)
-    private void stackable_carpet$getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
         if (state.getValue(MossyCarpetBlock.BASE)) {
             cir.setReturnValue(Shapes.or(cir.getReturnValue(), CarpetStacking.shapeFor(state.getValue(CarpetStacking.LAYERS))));
         }

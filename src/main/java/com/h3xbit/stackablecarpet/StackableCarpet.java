@@ -12,14 +12,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 public class StackableCarpet implements ModInitializer {
     public static final String MOD_ID = "stackable_carpet";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public static final Identifier MIXED_CARPET_ID = Identifier.fromNamespaceAndPath(MOD_ID, "mixed_carpet");
     public static final Block MIXED_CARPET = Registry.register(BuiltInRegistries.BLOCK, MIXED_CARPET_ID,

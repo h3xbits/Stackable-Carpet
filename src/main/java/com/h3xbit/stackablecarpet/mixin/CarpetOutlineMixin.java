@@ -8,7 +8,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -37,11 +36,7 @@ public abstract class CarpetOutlineMixin {
         if (!CarpetStacking.isStack(state)) {
             return shape;
         }
-        int layers = state.getValue(CarpetStacking.LAYERS);
-        Vec3 hit = blockHitResult.getLocation();
-        double localY = hit.y - pos.getY();
-        int targetLayer = (int) Math.ceil(localY * 16.0);
-        targetLayer = Math.max(1, Math.min(layers, targetLayer));
+        int targetLayer = CarpetStacking.targetLayer(blockHitResult, pos, state.getValue(CarpetStacking.LAYERS));
         return Block.column(16.0, targetLayer - 1, targetLayer);
     }
 }

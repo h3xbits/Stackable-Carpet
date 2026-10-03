@@ -1,6 +1,7 @@
 package com.h3xbit.stackablecarpet;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
@@ -14,6 +15,8 @@ import net.minecraft.world.level.block.MossyCarpetBlock;
 import net.minecraft.world.level.block.WoolCarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.ArrayList;
@@ -59,10 +62,10 @@ public final class CarpetStacking {
     }
 
     public static boolean isLayerCarpet(Block block) {
-        return block instanceof WoolCarpetBlock || block == Blocks.MOSS_CARPET || block == Blocks.PALE_MOSS_CARPET;
+        return fullBlockFor(block) != null;
     }
 
-    // What 16 layers of one carpet turn into
+    // What 16 layers of one carpet turn into - null for carpets that can't be layers
     public static Block fullBlockFor(Block carpet) {
         if (carpet instanceof WoolCarpetBlock woolCarpet) {
             return Blocks.WOOL.pick(woolCarpet.getColor());
@@ -76,15 +79,19 @@ public final class CarpetStacking {
         return null;
     }
 
-    // The texture the carpet's own model uses
+    // The texture the carpet's own model uses - its full block's, except pale moss carpet has its own
     public static Identifier textureFor(Block carpet) {
-        if (carpet instanceof WoolCarpetBlock woolCarpet) {
-            return Identifier.withDefaultNamespace("block/" + woolCarpet.getColor().getName() + "_wool");
+        Block textured = carpet == Blocks.PALE_MOSS_CARPET ? carpet : fullBlockFor(carpet);
+        return BuiltInRegistries.BLOCK.getKey(textured).withPrefix("block/");
+    }
+
+    // The layer a hit lands in - the top one when the hit isn't on this block
+    public static int targetLayer(HitResult hit, BlockPos pos, int layers) {
+        if (hit instanceof BlockHitResult blockHit && blockHit.getBlockPos().equals(pos)) {
+            double localY = blockHit.getLocation().y - pos.getY();
+            return Math.max(1, Math.min(layers, (int) Math.ceil(localY * 16.0)));
         }
-        if (carpet == Blocks.MOSS_CARPET) {
-            return Identifier.withDefaultNamespace("block/moss_block");
-        }
-        return Identifier.withDefaultNamespace("block/pale_moss_carpet");
+        return layers;
     }
 
     // A carpet lying on the ground (pale moss carpet only with its base, not just hanging off a wall) or a mixed stack
@@ -108,12 +115,6 @@ public final class CarpetStacking {
             return Collections.nCopies(state.getValue(LAYERS), state.getBlock());
         }
         return List.of();
-    }
-
-    public static List<Block> withLayerOnTop(List<Block> layers, Block top) {
-        List<Block> result = new ArrayList<>(layers);
-        result.add(top);
-        return result;
     }
 
     // One carpet all the way up is a plain carpet stack, anything else a mixed one
@@ -161,7 +162,8 @@ public final class CarpetStacking {
         if (isLayerCarpet(held)) {
             List<Block> below = layersAt(context.getLevel(), pos, existing);
             if (!below.isEmpty() && below.size() < MAX_LAYERS) {
-                List<Block> layers = withLayerOnTop(below, held);
+                List<Block> layers = new ArrayList<>(below);
+                layers.add(held);
                 PENDING_LAYERS.set(layers);
                 return stateFor(layers);
             }

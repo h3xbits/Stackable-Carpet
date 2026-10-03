@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 // Carpet in a real client + integrated server, driven with real mouse input:
 // - white carpet stacked 1 -> 15 layers then into a wool block, then a 15 stack broken layer by
@@ -275,7 +276,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
             resetArea(context, server);
             setStack(server, white);
             standAt(context, server, 2.5);
-            placeOnTop(context, server, "mixed_" + shortName(top) + "_onto_full_white", top, carpet(CarpetStacking.withLayerOnTop(white, top)));
+            placeOnTop(context, server, "mixed_" + shortName(top) + "_onto_full_white", top, carpet(Stream.concat(white.stream(), Stream.of(top)).toList()));
         }
     }
 
