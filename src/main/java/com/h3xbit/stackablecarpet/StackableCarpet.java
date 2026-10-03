@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -69,6 +70,7 @@ public class StackableCarpet implements ModInitializer {
     public void onInitialize() {
         MIXED_CARPET = Registry.register(BuiltInRegistries.BLOCK, MIXED_CARPET_ID,
                 new MixedCarpet(BlockBehaviour.Properties.ofFullCopy(Blocks.CARPET.pick(DyeColor.WHITE))
+                        .mapColor(state -> layerCarpets().get(state.getValue(MixedCarpet.TOP)).defaultMapColor())
                         .setId(ResourceKey.create(Registries.BLOCK, MIXED_CARPET_ID))));
         MIXED_CARPET_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, MIXED_CARPET_ID,
                 new BlockEntityType<>(MixedCarpetEntity::new, Set.of(MIXED_CARPET)));
@@ -137,7 +139,9 @@ public class StackableCarpet implements ModInitializer {
         if (layers.stream().allMatch(layer -> layer == first)) {
             return first.defaultBlockState().setValue(LAYERS, layers.size());
         }
-        return MIXED_CARPET.defaultBlockState().setValue(LAYERS, layers.size());
+        return MIXED_CARPET.defaultBlockState()
+                .setValue(LAYERS, layers.size())
+                .setValue(MixedCarpet.TOP, layerCarpets().indexOf(layers.getLast()));
     }
 
     public static void place(LevelAccessor level, BlockPos pos, List<Block> layers) {
@@ -158,8 +162,17 @@ public class StackableCarpet implements ModInitializer {
 
     // Only here because a block needs its own class to have a block entity - the mixins give it everything else
     public static class MixedCarpet extends CarpetBlock implements EntityBlock {
+        // Which carpet is on top, as its place in layerCarpets() - it's what the stack shows as on maps
+        public static final IntegerProperty TOP = IntegerProperty.create("top", 0, DyeColor.values().length + 1);
+
         public MixedCarpet(Properties properties) {
             super(properties);
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+            super.createBlockStateDefinition(builder);
+            builder.add(TOP);
         }
 
         @Override

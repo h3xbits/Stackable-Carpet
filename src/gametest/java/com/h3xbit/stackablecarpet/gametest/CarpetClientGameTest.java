@@ -20,6 +20,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
@@ -92,6 +93,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
             for (int layer = 1; layer <= StackableCarpet.MAX_LAYERS; layer++) {
                 runMixedBreakFromSideCase(context, server, layer);
             }
+            runMixedPickAndMapCase(context, server);
             runMixedShowcase(context, server);
         } finally {
             context.runOnClient(client -> client.getSoundManager().removeListener(listener));
@@ -310,6 +312,37 @@ public class CarpetClientGameTest implements FabricClientGameTest {
     }
 
     // A few stacks next to wool and moss blocks, for the screenshots
+    private void runMixedPickAndMapCase(ClientGameTestContext context, TestServerContext server) {
+        resetArea(context, server);
+        setStack(server, MIXED);
+        standAt(context, server, 3.5);
+        server.runCommand("gamemode creative @a");
+
+        // A mixed stack shows on maps as its top carpet
+        MapColor mapColor = server.computeOnServer(minecraftServer -> minecraftServer.overworld().getBlockState(CARPET).getMapColor(minecraftServer.overworld(), CARPET));
+        report.add(String.format("[mixed_map_color] got %s, top carpet %s", mapColor.id, MIXED.getLast().defaultMapColor().id));
+        if (mapColor != MIXED.getLast().defaultMapColor()) {
+            failures.add("mixed_map_color: the map color isn't the top carpet's");
+        }
+
+        // Middle-click picks the carpet in the aimed layer
+        for (int layer : new int[]{1, 5, 16}) {
+            aimAt(context, new Vec3(CARPET.getX() + 1.0, CARPET.getY() + (layer - 0.5) / 16.0, CARPET.getZ() + 0.5));
+            context.getInput().pressKey(options -> options.keyPickItem);
+            context.waitTicks(SETTLE_TICKS);
+
+            String picked = server.computeOnServer(minecraftServer -> BuiltInRegistries.ITEM.getKey(
+                    minecraftServer.getPlayerList().getPlayers().getFirst().getMainHandItem().getItem()).getPath());
+            String wanted = shortName(MIXED.get(layer - 1));
+            report.add(String.format("[mixed_pick_layer_%d] picked %s, want %s", layer, picked, wanted));
+            if (!picked.equals(wanted)) {
+                failures.add("mixed_pick_layer_" + layer + ": picked " + picked + " instead of " + wanted);
+            }
+        }
+
+        server.runCommand("gamemode survival @a");
+    }
+
     private void runMixedShowcase(ClientGameTestContext context, TestServerContext server) {
         resetArea(context, server);
         server.runOnServer(minecraftServer -> {
