@@ -28,8 +28,8 @@ public abstract class TestWindowPositionMixin {
     private int windowedY;
 
     @Inject(method = "createGlfwWindow", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
-    private static void stackable_carpet$windowHints(CallbackInfoReturnable<Long> cir) {
-        int[] pos = stackable_carpet$testWindowPos();
+    private static void hideAndPlaceWindow(CallbackInfoReturnable<Long> cir) {
+        int[] pos = testWindowPos();
         if (pos == null) {
             return;
         }
@@ -41,8 +41,8 @@ public abstract class TestWindowPositionMixin {
 
     // The constructor works out a centered spot on the primary monitor afterwards - put ours back
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void stackable_carpet$moveWindow(CallbackInfo ci) {
-        int[] pos = stackable_carpet$testWindowPos();
+    private void moveWindow(CallbackInfo ci) {
+        int[] pos = testWindowPos();
         if (pos == null) {
             return;
         }
@@ -52,7 +52,7 @@ public abstract class TestWindowPositionMixin {
     }
 
     @Unique
-    private static int[] stackable_carpet$testWindowPos() {
+    private static int[] testWindowPos() {
         String value = System.getProperty("stackable_carpet.testWindowPos");
         if (value == null) {
             return null;

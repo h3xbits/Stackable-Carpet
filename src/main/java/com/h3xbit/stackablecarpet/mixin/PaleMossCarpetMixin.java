@@ -28,17 +28,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 // Pale moss carpet stacks in 1/16 layers like the other carpets - only its base lying on the ground,
 // the moss hanging off walls on its sides is left as it is.
 @Mixin(MossyCarpetBlock.class)
 public abstract class PaleMossCarpetMixin extends Block {
-
-    // While a stack is being broken: how many layers are under the aimed one - set in playerWillDestroy(), put back in destroy()
-    @Unique
-    private static final ThreadLocal<Map.Entry<BlockPos, Integer>> stackable_carpet$layersUnderBreak = new ThreadLocal<>();
 
     private PaleMossCarpetMixin(Properties properties) {
         super(properties);
@@ -50,12 +46,12 @@ public abstract class PaleMossCarpetMixin extends Block {
     }
 
     @Inject(method = "createBlockStateDefinition", at = @At("TAIL"))
-    private void stackable_carpet$addLayers(StateDefinition.Builder<Block, BlockState> builder, CallbackInfo ci) {
+    private void addLayersProperty(StateDefinition.Builder<Block, BlockState> builder, CallbackInfo ci) {
         builder.add(StackableCarpet.LAYERS);
     }
 
     @Inject(method = {"getShape", "getCollisionShape"}, at = @At("RETURN"), cancellable = true)
-    private void stackable_carpet$getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
+    private void addLayeredShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
         if (state.getValue(MossyCarpetBlock.BASE)) {
             cir.setReturnValue(Shapes.or(cir.getReturnValue(), StackableCarpet.shapeFor(state.getValue(StackableCarpet.LAYERS))));
         }
@@ -78,7 +74,7 @@ public abstract class PaleMossCarpetMixin extends Block {
     // Onto its own stack it adds a layer on top of vanilla's placement state, so the moss on its sides is worked out
     // like a freshly placed one - the 16th turns it into a pale moss block. Onto any other stack it makes a mixed stack.
     @ModifyReturnValue(method = "getStateForPlacement", at = @At("RETURN"))
-    private BlockState stackable_carpet$stackOnPlacement(BlockState placed, BlockPlaceContext context) {
+    private BlockState stackOnPlacement(BlockState placed, BlockPlaceContext context) {
         BlockState existing = context.getLevel().getBlockState(context.getClickedPos());
 
         if (!StackableCarpet.isStack(existing)) {
@@ -123,8 +119,8 @@ public abstract class PaleMossCarpetMixin extends Block {
         if (state.getValue(MossyCarpetBlock.BASE)) {
             int aimedLayer = StackableCarpet.targetLayer(player.pick(player.blockInteractionRange(), 1.0F, false), pos, state.getValue(StackableCarpet.LAYERS));
 
-            // Remember how many layers are under the aimed one - destroy() puts them back
-            stackable_carpet$layersUnderBreak.set(Map.entry(pos.immutable(), aimedLayer - 1));
+            // The layers under the aimed one - destroy() puts them back
+            StackableCarpet.PENDING_LAYERS.set(Collections.nCopies(aimedLayer - 1, this));
         }
 
         return super.playerWillDestroy(level, pos, state, player);
@@ -135,15 +131,15 @@ public abstract class PaleMossCarpetMixin extends Block {
     public void destroy(LevelAccessor level, BlockPos pos, BlockState state) {
         super.destroy(level, pos, state);
 
-        Map.Entry<BlockPos, Integer> breaking = stackable_carpet$layersUnderBreak.get();
-        if (breaking == null || !breaking.getKey().equals(pos)) {
+        if (!state.getValue(MossyCarpetBlock.BASE)) {
             return;
         }
-        stackable_carpet$layersUnderBreak.remove();
 
-        int layersUnder = breaking.getValue();
-        if (layersUnder > 0) {
-            level.setBlock(pos, state.setValue(StackableCarpet.LAYERS, layersUnder), Block.UPDATE_ALL);
+        List<Block> layersUnder = StackableCarpet.PENDING_LAYERS.get();
+        StackableCarpet.PENDING_LAYERS.remove();
+
+        if (layersUnder != null && !layersUnder.isEmpty()) {
+            level.setBlock(pos, state.setValue(StackableCarpet.LAYERS, layersUnder.size()), Block.UPDATE_ALL);
         }
     }
 
@@ -172,13 +168,13 @@ public abstract class PaleMossCarpetMixin extends Block {
     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
 
-        if (state.getValue(MossyCarpetBlock.BASE) && stackable_carpet$grewTaller(state, oldState)) {
+        if (state.getValue(MossyCarpetBlock.BASE) && grewTaller(state, oldState)) {
             level.setBlock(pos, getUpdatedState(state, level, pos, true), Block.UPDATE_CLIENTS);
         }
     }
 
     @Unique
-    private static boolean stackable_carpet$grewTaller(BlockState state, BlockState oldState) {
+    private static boolean grewTaller(BlockState state, BlockState oldState) {
         return !oldState.is(state.getBlock()) || oldState.getValue(StackableCarpet.LAYERS) < state.getValue(StackableCarpet.LAYERS);
     }
 }

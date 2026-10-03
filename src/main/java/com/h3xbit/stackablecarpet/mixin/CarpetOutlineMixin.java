@@ -27,7 +27,7 @@ public abstract class CarpetOutlineMixin {
     private ClientLevel level;
 
     @ModifyVariable(method = "extractBlockOutline", at = @At("STORE"), name = "shape")
-    private VoxelShape stackable_carpet$narrowToHoveredLayer(VoxelShape shape) {
+    private VoxelShape narrowToHoveredLayer(VoxelShape shape) {
         if (!(this.minecraft.hitResult instanceof BlockHitResult blockHitResult)) {
             return shape;
         }

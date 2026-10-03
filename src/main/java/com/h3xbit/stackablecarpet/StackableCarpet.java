@@ -61,7 +61,8 @@ public class StackableCarpet implements ModInitializer {
     // Set in onInitialize() - the mixins load this class while vanilla's own blocks are still being created
     public static Block MIXED_CARPET;
     public static BlockEntityType<MixedCarpetEntity> MIXED_CARPET_ENTITY;
-    // Layers for a mixed stack being placed - from either mixin's getStateForPlacement() to the mixed carpet's setPlacedBy()
+    // The layers about to go at a spot: a mixed stack being placed (getStateForPlacement() to setPlacedBy()),
+    // or the layers under the aimed one of a stack being broken (playerWillDestroy() to destroy())
     public static final ThreadLocal<List<Block>> PENDING_LAYERS = new ThreadLocal<>();
 
     @Override

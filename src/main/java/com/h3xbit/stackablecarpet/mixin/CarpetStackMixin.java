@@ -21,7 +21,6 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -29,22 +28,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 // Every carpet - wool, moss and the mixed carpet - stacks in 1/16 layers.
 @Mixin(CarpetBlock.class)
 public abstract class CarpetStackMixin extends Block {
-
-    // While a stack is being broken: the layers under the aimed one - set in playerWillDestroy(), put back in destroy()
-    @Unique
-    private static final ThreadLocal<Map.Entry<BlockPos, List<Block>>> stackable_carpet$layersUnderBreak = new ThreadLocal<>();
 
     private CarpetStackMixin(Properties properties) {
         super(properties);
     }
 
     @Inject(method = "getShape", at = @At("RETURN"), cancellable = true)
-    private void stackable_carpet$getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
+    private void layeredShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
         cir.setReturnValue(StackableCarpet.shapeFor(state.getValue(StackableCarpet.LAYERS)));
     }
 
@@ -63,7 +57,7 @@ public abstract class CarpetStackMixin extends Block {
         Block heldCarpet = heldItem.getBlock();
         int layers = state.getValue(StackableCarpet.LAYERS);
 
-        if (StackableCarpet.isLayerCarpet(this) || stackable_carpet$isMixed()) {
+        if (StackableCarpet.isLayerCarpet(this) || (Object) this instanceof StackableCarpet.MixedCarpet) {
             return StackableCarpet.isLayerCarpet(heldCarpet) && layers < StackableCarpet.MAX_LAYERS;
         }
 
@@ -79,32 +73,21 @@ public abstract class CarpetStackMixin extends Block {
             return defaultBlockState();
         }
 
+        // The same carpet adds a layer - the 16th turns the stack into its full block
         if (existing.is(this)) {
-            return stackable_carpet$addLayer(existing);
+            int layers = existing.getValue(StackableCarpet.LAYERS);
+            if (layers < StackableCarpet.MAX_SINGLE_COLOR_LAYERS) {
+                return existing.setValue(StackableCarpet.LAYERS, layers + 1);
+            }
+
+            Block fullBlock = StackableCarpet.fullBlockFor(this);
+            if (fullBlock == null) {
+                return defaultBlockState();
+            }
+            return fullBlock.defaultBlockState();
         }
 
-        return stackable_carpet$mixInto(context, existing);
-    }
-
-    // One more layer of the same carpet - the 16th turns the stack into its full block
-    @Unique
-    private BlockState stackable_carpet$addLayer(BlockState existing) {
-        int layers = existing.getValue(StackableCarpet.LAYERS);
-
-        if (layers < StackableCarpet.MAX_SINGLE_COLOR_LAYERS) {
-            return existing.setValue(StackableCarpet.LAYERS, layers + 1);
-        }
-
-        Block fullBlock = StackableCarpet.fullBlockFor(this);
-        if (fullBlock == null) {
-            return defaultBlockState();
-        }
-        return fullBlock.defaultBlockState();
-    }
-
-    // This carpet on top of a stack of other carpets makes a mixed stack
-    @Unique
-    private BlockState stackable_carpet$mixInto(BlockPlaceContext context, BlockState existing) {
+        // Any other layer carpet on top makes a mixed stack
         List<Block> layersBelow = StackableCarpet.layersAt(context.getLevel(), context.getClickedPos(), existing);
 
         if (!StackableCarpet.isLayerCarpet(this) || layersBelow.isEmpty() || layersBelow.size() >= StackableCarpet.MAX_LAYERS) {
@@ -152,11 +135,18 @@ public abstract class CarpetStackMixin extends Block {
     // the same way on the client and the server, so both end up with the same shorter stack in the same tick.
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        List<Block> layers = stackable_carpet$layersOf(level, pos, state);
+        // Each layer of the stack, bottom first
+        List<Block> layers;
+        if ((Object) this instanceof StackableCarpet.MixedCarpet) {
+            layers = StackableCarpet.layersAt(level, pos, state);
+        } else {
+            layers = Collections.nCopies(state.getValue(StackableCarpet.LAYERS), this);
+        }
+
         int aimedLayer = StackableCarpet.targetLayer(player.pick(player.blockInteractionRange(), 1.0F, false), pos, layers.size());
 
-        // Remember the layers under the aimed one - destroy() puts them back
-        stackable_carpet$layersUnderBreak.set(Map.entry(pos.immutable(), List.copyOf(layers.subList(0, aimedLayer - 1))));
+        // The layers under the aimed one - destroy() puts them back
+        StackableCarpet.PENDING_LAYERS.set(List.copyOf(layers.subList(0, aimedLayer - 1)));
 
         // A mixed stack keeps only the broken layers, so its drops are exactly those carpets
         if (level.getBlockEntity(pos) instanceof StackableCarpet.MixedCarpetEntity entity) {
@@ -171,18 +161,14 @@ public abstract class CarpetStackMixin extends Block {
     public void destroy(LevelAccessor level, BlockPos pos, BlockState state) {
         super.destroy(level, pos, state);
 
-        Map.Entry<BlockPos, List<Block>> breaking = stackable_carpet$layersUnderBreak.get();
-        if (breaking == null || !breaking.getKey().equals(pos)) {
-            return;
-        }
-        stackable_carpet$layersUnderBreak.remove();
+        List<Block> layersUnder = StackableCarpet.PENDING_LAYERS.get();
+        StackableCarpet.PENDING_LAYERS.remove();
 
-        List<Block> layersUnder = breaking.getValue();
-        if (layersUnder.isEmpty()) {
+        if (layersUnder == null || layersUnder.isEmpty()) {
             return;
         }
 
-        if (stackable_carpet$isMixed()) {
+        if ((Object) this instanceof StackableCarpet.MixedCarpet) {
             StackableCarpet.place(level, pos, layersUnder);
         } else {
             level.setBlock(pos, state.setValue(StackableCarpet.LAYERS, layersUnder.size()), Block.UPDATE_ALL);
@@ -195,7 +181,7 @@ public abstract class CarpetStackMixin extends Block {
         super.playerDestroy(level, player, pos, state, blockEntity, tool);
 
         // A mixed stack's drops all come from its block entity
-        if (stackable_carpet$isMixed()) {
+        if ((Object) this instanceof StackableCarpet.MixedCarpet) {
             return;
         }
 
@@ -221,7 +207,7 @@ public abstract class CarpetStackMixin extends Block {
     // Pick block on a mixed stack gives its top carpet
     @Override
     protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
-        if (!stackable_carpet$isMixed()) {
+        if (!((Object) this instanceof StackableCarpet.MixedCarpet)) {
             return super.getCloneItemStack(level, pos, state, includeData);
         }
 
@@ -230,19 +216,5 @@ public abstract class CarpetStackMixin extends Block {
             return ItemStack.EMPTY;
         }
         return new ItemStack(layers.getLast());
-    }
-
-    // Each layer of the stack, bottom first
-    @Unique
-    private List<Block> stackable_carpet$layersOf(Level level, BlockPos pos, BlockState state) {
-        if (stackable_carpet$isMixed()) {
-            return StackableCarpet.layersAt(level, pos, state);
-        }
-        return Collections.nCopies(state.getValue(StackableCarpet.LAYERS), this);
-    }
-
-    @Unique
-    private boolean stackable_carpet$isMixed() {
-        return (Object) this instanceof StackableCarpet.MixedCarpet;
     }
 }
