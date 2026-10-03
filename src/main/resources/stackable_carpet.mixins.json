@@ -6,6 +6,7 @@
   "mixins": [
     "CarpetStackMixin",
     "PaleMossCarpetStackMixin",
+    "CarpetPlaceMixin",
     "CarpetBreakMixin"
   ],
   "client": [

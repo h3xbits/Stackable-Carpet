@@ -1,22 +1,21 @@
-package com.h3xbit.stackablecarpet.mixin;
+package com.h3xbit.caverns_below.mixin.carpet;
 
-import com.h3xbit.stackablecarpet.CarpetStacking;
-import com.h3xbit.stackablecarpet.MixedCarpetBlock;
+import com.h3xbit.caverns_below.carpet.CarpetStacking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.List;
 
 // destroyBlock() is vanilla's full break-and-drop path - letting it run unchanged means the
 // player gets a correct single-carpet drop (loot table, tool checks, stats all untouched), we
@@ -35,62 +34,53 @@ public class CarpetBreakMixin {
     protected ServerPlayer player;
 
     @Unique
-    private BlockState stackable_carpet$stack;
+    private BlockState caverns_below$preDestroyState;
 
     @Unique
-    private int stackable_carpet$targetLayer;
-
-    @Unique
-    private List<Block> stackable_carpet$mixedLayers;
+    private int caverns_below$targetLayer;
 
     @Inject(method = "destroyBlock", at = @At("HEAD"))
-    private void stackable_carpet$captureState(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+    private void caverns_below$captureState(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
         BlockState state = this.level.getBlockState(pos);
-        this.stackable_carpet$stack = CarpetStacking.isStack(state) ? state : null;
-        this.stackable_carpet$mixedLayers = null;
-        if (this.stackable_carpet$stack == null) {
-            return;
-        }
-        int targetLayer = CarpetStacking.targetLayer(this.player.pick(this.player.blockInteractionRange(), 1.0F, false), pos, state.getValue(CarpetStacking.LAYERS));
-        this.stackable_carpet$targetLayer = targetLayer;
+        this.caverns_below$preDestroyState = state;
 
-        // Mixed stack: leave only the broken layers in the block entity, so vanilla's drops are exactly those carpets
-        if (state.getBlock() instanceof MixedCarpetBlock && this.level.getBlockEntity(pos) instanceof MixedCarpetBlock.Entity entity) {
-            List<Block> layers = CarpetStacking.layersAt(this.level, pos, state);
-            this.stackable_carpet$mixedLayers = layers;
-            entity.setLayersQuietly(layers.subList(targetLayer - 1, layers.size()));
+        int targetLayer = 1;
+        if (state.getBlock() instanceof CarpetBlock) {
+            int layers = state.getValue(CarpetStacking.LAYERS);
+            targetLayer = layers;
+            if (this.player.pick(this.player.blockInteractionRange(), 1.0F, false) instanceof BlockHitResult hitResult
+                    && hitResult.getBlockPos().equals(pos)) {
+                double localY = hitResult.getLocation().y - pos.getY();
+                targetLayer = Math.max(1, Math.min(layers, (int) Math.ceil(localY * 16.0)));
+            }
         }
+        this.caverns_below$targetLayer = targetLayer;
     }
 
     @Inject(method = "destroyBlock", at = @At("RETURN"))
-    private void stackable_carpet$restoreRemainingLayers(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        BlockState stack = this.stackable_carpet$stack;
-        List<Block> mixedLayers = this.stackable_carpet$mixedLayers;
-        int targetLayer = this.stackable_carpet$targetLayer;
-        this.stackable_carpet$stack = null;
-        this.stackable_carpet$mixedLayers = null;
-        if (stack == null) {
+    private void caverns_below$restoreRemainingLayers(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+        BlockState preDestroyState = this.caverns_below$preDestroyState;
+        int targetLayer = this.caverns_below$targetLayer;
+        this.caverns_below$preDestroyState = null;
+        if (preDestroyState == null || !Boolean.TRUE.equals(cir.getReturnValue())) {
             return;
         }
-        if (!cir.getReturnValueZ()) {
-            if (mixedLayers != null && this.level.getBlockEntity(pos) instanceof MixedCarpetBlock.Entity entity) {
-                entity.setLayersQuietly(mixedLayers);
-            }
+        if (!(preDestroyState.getBlock() instanceof CarpetBlock)) {
             return;
         }
-        if (mixedLayers != null) {
-            if (targetLayer > 1) {
-                CarpetStacking.place(this.level, pos, mixedLayers.subList(0, targetLayer - 1));
-            }
+        int layers = preDestroyState.getValue(CarpetStacking.LAYERS);
+        if (layers <= 1) {
             return;
         }
 
-        if (targetLayer > 1) {
-            this.level.setBlock(pos, stack.setValue(CarpetStacking.LAYERS, targetLayer - 1), 3);
+        int remaining = targetLayer - 1;
+        if (remaining > 0) {
+            this.level.setBlock(pos, preDestroyState.setValue(CarpetStacking.LAYERS, remaining), 3);
         }
-        int extraDrops = stack.getValue(CarpetStacking.LAYERS) - targetLayer;
+
+        int extraDrops = layers - targetLayer;
         if (extraDrops > 0 && !this.player.preventsBlockDrops()) {
-            Block.popResource(this.level, pos, new ItemStack(stack.getBlock().asItem(), extraDrops));
+            Block.popResource(this.level, pos, new ItemStack(preDestroyState.getBlock().asItem(), extraDrops));
         }
     }
 }

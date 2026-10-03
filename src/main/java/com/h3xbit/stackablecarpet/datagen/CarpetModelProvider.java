@@ -1,7 +1,7 @@
 package com.h3xbit.stackablecarpet.datagen;
 
-import com.h3xbit.stackablecarpet.CarpetStacking;
 import com.h3xbit.stackablecarpet.StackableCarpet;
+import com.h3xbit.stackablecarpet.StackableCarpetClient;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.minecraft.client.data.models.BlockModelGenerators;
@@ -38,26 +38,26 @@ public class CarpetModelProvider extends FabricModelProvider {
     // Layer 1 keeps vanilla's own carpet model. Layers 2-16 each parent onto one of the 15
     // hand-authored height templates under assets/stackable_carpet/models/block/carpet_layers/
     // (Mojang's datagen API only ever generates a parent+texture override, never raw box
-    // geometry, so those templates can't be generated - see CarpetStacking for the matching
+    // geometry, so those templates can't be generated - see StackableCarpet for the matching
     // Java-side property/shape).
     @Override
     public void generateBlockStateModels(BlockModelGenerators blockModelGenerators) {
-        ModelTemplate[] heightTemplates = new ModelTemplate[CarpetStacking.MAX_LAYERS + 1];
-        for (int layers = 2; layers <= CarpetStacking.MAX_LAYERS; layers++) {
+        ModelTemplate[] heightTemplates = new ModelTemplate[StackableCarpet.MAX_LAYERS + 1];
+        for (int layers = 2; layers <= StackableCarpet.MAX_LAYERS; layers++) {
             heightTemplates[layers] = new ModelTemplate(
                     Optional.of(Identifier.fromNamespaceAndPath(StackableCarpet.MOD_ID, "block/carpet_layers/template_layer_" + layers)),
                     Optional.empty(),
                     TextureSlot.WOOL);
         }
 
-        for (Block carpet : CarpetStacking.layerCarpets()) {
+        for (Block carpet : StackableCarpet.layerCarpets()) {
             MultiVariant[] layerModels = layerModels(blockModelGenerators, heightTemplates, carpet);
             if (carpet == Blocks.PALE_MOSS_CARPET) {
                 generatePaleMossCarpet(blockModelGenerators, layerModels);
                 continue;
             }
-            var dispatch = PropertyDispatch.initial(CarpetStacking.LAYERS);
-            for (int layers = 1; layers <= CarpetStacking.MAX_LAYERS; layers++) {
+            var dispatch = PropertyDispatch.initial(StackableCarpet.LAYERS);
+            for (int layers = 1; layers <= StackableCarpet.MAX_LAYERS; layers++) {
                 dispatch = dispatch.select(layers, layerModels[layers]);
             }
             blockModelGenerators.blockStateOutput.accept(MultiVariantGenerator.dispatch(carpet).with(dispatch));
@@ -66,10 +66,10 @@ public class CarpetModelProvider extends FabricModelProvider {
 
     private static MultiVariant[] layerModels(BlockModelGenerators blockModelGenerators, ModelTemplate[] heightTemplates, Block carpet) {
         String carpetName = BuiltInRegistries.BLOCK.getKey(carpet).getPath();
-        TextureMapping texture = new TextureMapping().put(TextureSlot.WOOL, new Material(CarpetStacking.textureFor(carpet)));
-        MultiVariant[] models = new MultiVariant[CarpetStacking.MAX_LAYERS + 1];
+        TextureMapping texture = new TextureMapping().put(TextureSlot.WOOL, new Material(StackableCarpetClient.textureFor(carpet)));
+        MultiVariant[] models = new MultiVariant[StackableCarpet.MAX_LAYERS + 1];
         models[1] = BlockModelGenerators.plainVariant(ModelLocationUtils.getModelLocation(carpet));
-        for (int layers = 2; layers <= CarpetStacking.MAX_LAYERS; layers++) {
+        for (int layers = 2; layers <= StackableCarpet.MAX_LAYERS; layers++) {
             Identifier modelId = Identifier.fromNamespaceAndPath(StackableCarpet.MOD_ID, "block/carpet_layers/" + carpetName + "_" + layers);
             heightTemplates[layers].create(modelId, texture, blockModelGenerators.modelOutput);
             models[layers] = BlockModelGenerators.plainVariant(modelId);
@@ -87,8 +87,8 @@ public class CarpetModelProvider extends FabricModelProvider {
                 .term(MossyCarpetBlock.SOUTH, WallSide.NONE).term(MossyCarpetBlock.WEST, WallSide.NONE);
 
         MultiPartGenerator generator = MultiPartGenerator.multiPart(carpet);
-        for (int layers = 1; layers <= CarpetStacking.MAX_LAYERS; layers++) {
-            generator.with(BlockModelGenerators.condition().term(MossyCarpetBlock.BASE, true).term(CarpetStacking.LAYERS, layers), layerModels[layers]);
+        for (int layers = 1; layers <= StackableCarpet.MAX_LAYERS; layers++) {
+            generator.with(BlockModelGenerators.condition().term(MossyCarpetBlock.BASE, true).term(StackableCarpet.LAYERS, layers), layerModels[layers]);
         }
         generator.with(noSides, layerModels[1]);
         Map<Direction, VariantMutator> rotations = Map.of(

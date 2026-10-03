@@ -1,6 +1,6 @@
 package com.h3xbit.stackablecarpet.gametest;
 
-import com.h3xbit.stackablecarpet.CarpetStacking;
+import com.h3xbit.stackablecarpet.StackableCarpet;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -72,7 +72,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
             runBesideWoolCase(context, server);
             runPlaceCase(context, server, WHITE);
             runBreakFromTopCase(context, server);
-            for (int layer = 1; layer <= CarpetStacking.MAX_SINGLE_COLOR_LAYERS; layer++) {
+            for (int layer = 1; layer <= StackableCarpet.MAX_SINGLE_COLOR_LAYERS; layer++) {
                 runBreakFromSideCase(context, server, WHITE, layer);
             }
 
@@ -87,7 +87,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
             runMixedPlaceCase(context, server);
             runMixedOntoFullSingleColorCase(context, server);
             runMixedBreakFromTopCase(context, server);
-            for (int layer = 1; layer <= CarpetStacking.MAX_LAYERS; layer++) {
+            for (int layer = 1; layer <= StackableCarpet.MAX_LAYERS; layer++) {
                 runMixedBreakFromSideCase(context, server, layer);
             }
             runMixedShowcase(context, server);
@@ -108,10 +108,10 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         resetArea(context, server);
         standAt(context, server, 2.5);
 
-        for (int expected = 1; expected <= CarpetStacking.MAX_SINGLE_COLOR_LAYERS; expected++) {
+        for (int expected = 1; expected <= StackableCarpet.MAX_SINGLE_COLOR_LAYERS; expected++) {
             placeOnTop(context, server, prefix + expected, carpet, carpet(Collections.nCopies(expected, carpet)));
         }
-        placeOnTop(context, server, prefix + "16", carpet, CarpetStacking.fullBlockFor(carpet).getName().getString());
+        placeOnTop(context, server, prefix + "16", carpet, StackableCarpet.fullBlockFor(carpet).getName().getString());
     }
 
     // Stacks right next to wool blocks, to compare the shading by eye in the screenshots
@@ -122,10 +122,10 @@ public class CarpetClientGameTest implements FabricClientGameTest {
             for (int i = 0; i < row.length; i++) {
                 for (int z = 0; z < 2; z++) {
                     BlockPos pos = CARPET.offset(i - 3, 0, z);
-                    if (row[i] > CarpetStacking.MAX_SINGLE_COLOR_LAYERS) {
+                    if (row[i] > StackableCarpet.MAX_SINGLE_COLOR_LAYERS) {
                         minecraftServer.overworld().setBlock(pos, Blocks.WOOL.pick(DyeColor.WHITE).defaultBlockState(), 3);
                     } else {
-                        CarpetStacking.place(minecraftServer.overworld(), pos, Collections.nCopies(row[i], WHITE));
+                        StackableCarpet.place(minecraftServer.overworld(), pos, Collections.nCopies(row[i], WHITE));
                     }
                 }
             }
@@ -142,10 +142,10 @@ public class CarpetClientGameTest implements FabricClientGameTest {
     // A 15 stack, aimed at the top face each time: the outline should be the top layer and each break takes one layer
     private void runBreakFromTopCase(ClientGameTestContext context, TestServerContext server) {
         resetArea(context, server);
-        setStack(server, Collections.nCopies(CarpetStacking.MAX_SINGLE_COLOR_LAYERS, WHITE));
+        setStack(server, Collections.nCopies(StackableCarpet.MAX_SINGLE_COLOR_LAYERS, WHITE));
         standAt(context, server, 2.5);
 
-        for (int layers = CarpetStacking.MAX_SINGLE_COLOR_LAYERS; layers >= 1; layers--) {
+        for (int layers = StackableCarpet.MAX_SINGLE_COLOR_LAYERS; layers >= 1; layers--) {
             String name = "top_layer_" + layers;
             aimAt(context, new Vec3(CARPET.getX() + 0.5, CARPET.getY() + layers / 16.0, CARPET.getZ() + 0.5));
             checkOutline(context, name, layers);
@@ -157,13 +157,13 @@ public class CarpetClientGameTest implements FabricClientGameTest {
     private void runBreakFromSideCase(ClientGameTestContext context, TestServerContext server, Block carpet, int layer) {
         String name = "side_" + shortName(carpet) + "_layer_" + layer;
         resetArea(context, server);
-        setStack(server, Collections.nCopies(CarpetStacking.MAX_SINGLE_COLOR_LAYERS, carpet));
+        setStack(server, Collections.nCopies(StackableCarpet.MAX_SINGLE_COLOR_LAYERS, carpet));
         standAt(context, server, 3.5);
 
         aimAt(context, new Vec3(CARPET.getX() + 1.0, CARPET.getY() + (layer - 0.5) / 16.0, CARPET.getZ() + 0.5));
         checkOutline(context, name, layer);
         breakAimed(context, server, name, Collections.nCopies(layer - 1, carpet),
-                Collections.nCopies(CarpetStacking.MAX_SINGLE_COLOR_LAYERS - layer + 1, carpet));
+                Collections.nCopies(StackableCarpet.MAX_SINGLE_COLOR_LAYERS - layer + 1, carpet));
     }
 
     // Vanilla growth with real bone meal clicks: moss and pale moss blocks spread and grow carpets on top,
@@ -256,7 +256,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         resetArea(context, server);
         standAt(context, server, 2.5);
 
-        for (int layers = 1; layers <= CarpetStacking.MAX_LAYERS; layers++) {
+        for (int layers = 1; layers <= StackableCarpet.MAX_LAYERS; layers++) {
             placeOnTop(context, server, "mixed_place_" + layers, MIXED.get(layers - 1), carpet(MIXED.subList(0, layers)));
         }
         placeOnTop(context, server, "mixed_place_17", WHITE, carpet(MIXED));
@@ -271,7 +271,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
 
     // 15 white + gray = 16 separate layers, not a wool block; and moss / pale moss onto white mix the same way
     private void runMixedOntoFullSingleColorCase(ClientGameTestContext context, TestServerContext server) {
-        List<Block> white = Collections.nCopies(CarpetStacking.MAX_SINGLE_COLOR_LAYERS, WHITE);
+        List<Block> white = Collections.nCopies(StackableCarpet.MAX_SINGLE_COLOR_LAYERS, WHITE);
         for (Block top : List.of(GRAY, Blocks.MOSS_CARPET, Blocks.PALE_MOSS_CARPET)) {
             resetArea(context, server);
             setStack(server, white);
@@ -313,17 +313,17 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         server.runOnServer(minecraftServer -> {
             Level level = minecraftServer.overworld();
             level.setBlock(CARPET.offset(-3, 0, 0), Blocks.MOSS_BLOCK.defaultBlockState(), 3);
-            CarpetStacking.place(level, CARPET.offset(-2, 0, 0), Collections.nCopies(8, Blocks.MOSS_CARPET));
-            CarpetStacking.place(level, CARPET.offset(-1, 0, 0), MIXED);
+            StackableCarpet.place(level, CARPET.offset(-2, 0, 0), Collections.nCopies(8, Blocks.MOSS_CARPET));
+            StackableCarpet.place(level, CARPET.offset(-1, 0, 0), MIXED);
             List<Block> stripes = new ArrayList<>();
-            for (int i = 0; i < CarpetStacking.MAX_LAYERS; i++) {
+            for (int i = 0; i < StackableCarpet.MAX_LAYERS; i++) {
                 stripes.add(i % 2 == 0 ? Blocks.MOSS_CARPET : Blocks.PALE_MOSS_CARPET);
             }
-            CarpetStacking.place(level, CARPET, stripes);
-            CarpetStacking.place(level, CARPET.offset(1, 0, 0), Collections.nCopies(12, Blocks.PALE_MOSS_CARPET));
+            StackableCarpet.place(level, CARPET, stripes);
+            StackableCarpet.place(level, CARPET.offset(1, 0, 0), Collections.nCopies(12, Blocks.PALE_MOSS_CARPET));
             List<Block> half = new ArrayList<>(Collections.nCopies(4, WHITE));
             half.addAll(Collections.nCopies(4, Blocks.MOSS_CARPET));
-            CarpetStacking.place(level, CARPET.offset(2, 0, 0), half);
+            StackableCarpet.place(level, CARPET.offset(2, 0, 0), half);
             level.setBlock(CARPET.offset(3, 0, 0), Blocks.PALE_MOSS_BLOCK.defaultBlockState(), 3);
         });
         server.runCommand(String.format("tp @a %.1f %d %.1f facing %.1f %.1f %.1f", CARPET.getX() + 2.5, CARPET.getY() + 1, CARPET.getZ() - 3.0, CARPET.getX() + 0.5, CARPET.getY() + 0.4, CARPET.getZ() + 0.5));
@@ -336,7 +336,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         server.runCommand("item replace entity @a hotbar.0 with " + BuiltInRegistries.BLOCK.getKey(carpet) + " 64");
         int layers = server.computeOnServer(minecraftServer -> {
             BlockState state = minecraftServer.overworld().getBlockState(CARPET);
-            return state.hasProperty(CarpetStacking.LAYERS) ? state.getValue(CarpetStacking.LAYERS) : 0;
+            return state.hasProperty(StackableCarpet.LAYERS) ? state.getValue(StackableCarpet.LAYERS) : 0;
         });
         aimAt(context, new Vec3(CARPET.getX() + 0.5, CARPET.getY() + layers / 16.0, CARPET.getZ() + 0.5));
 
@@ -450,7 +450,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
     }
 
     private static void setStack(TestServerContext server, List<Block> layers) {
-        server.runOnServer(minecraftServer -> CarpetStacking.place(minecraftServer.overworld(), CARPET, layers));
+        server.runOnServer(minecraftServer -> StackableCarpet.place(minecraftServer.overworld(), CARPET, layers));
     }
 
     private static void standAt(ClientGameTestContext context, TestServerContext server, double eastOffset) {
@@ -471,7 +471,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
     // e.g. "Mixed Carpet [white_carpet, gray_carpet, moss_carpet]", "White Carpet [white_carpet, white_carpet]", "White Wool", "Air"
     private static String describeAt(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        List<Block> layers = CarpetStacking.layersAt(level, pos, state);
+        List<Block> layers = StackableCarpet.layersAt(level, pos, state);
         String name = state.getBlock().getName().getString();
         return layers.isEmpty() ? name : name + " " + layers.stream().map(CarpetClientGameTest::shortName).toList();
     }
@@ -480,7 +480,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         if (layers.isEmpty()) {
             return Blocks.AIR.getName().getString();
         }
-        return CarpetStacking.stateFor(layers).getBlock().getName().getString() + " " + layers.stream().map(CarpetClientGameTest::shortName).toList();
+        return StackableCarpet.stateFor(layers).getBlock().getName().getString() + " " + layers.stream().map(CarpetClientGameTest::shortName).toList();
     }
 
     private static String shortName(Block block) {
@@ -491,7 +491,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         List<Block> layers = new ArrayList<>(List.of(WHITE, GRAY, GRAY, Blocks.MOSS_CARPET, Blocks.PALE_MOSS_CARPET));
         for (DyeColor color : DyeColor.values()) {
             Block carpet = Blocks.CARPET.pick(color);
-            if (layers.size() < CarpetStacking.MAX_LAYERS && carpet != WHITE && carpet != GRAY) {
+            if (layers.size() < StackableCarpet.MAX_LAYERS && carpet != WHITE && carpet != GRAY) {
                 layers.add(carpet);
             }
         }

@@ -12,6 +12,8 @@ import net.minecraft.client.resources.model.ResolvableModel;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.Block;
@@ -36,6 +38,12 @@ public class StackableCarpetClient implements ClientModInitializer {
         }));
     }
 
+    // The texture the carpet's own model uses - its full block's, except pale moss carpet has its own
+    public static Identifier textureFor(Block carpet) {
+        Block textured = carpet == Blocks.PALE_MOSS_CARPET ? carpet : StackableCarpet.fullBlockFor(carpet);
+        return BuiltInRegistries.BLOCK.getKey(textured).withPrefix("block/");
+    }
+
     private static class UnbakedMixedCarpetModel implements BlockStateModel.UnbakedRoot {
         @Override
         public void resolveDependencies(ResolvableModel.Resolver resolver) {
@@ -44,8 +52,8 @@ public class StackableCarpetClient implements ClientModInitializer {
         @Override
         public BlockStateModel bake(BlockState state, ModelBaker baker) {
             Map<Block, Material.Baked> textures = new HashMap<>();
-            for (Block carpet : CarpetStacking.layerCarpets()) {
-                textures.put(carpet, baker.materials().get(new Material(CarpetStacking.textureFor(carpet)),
+            for (Block carpet : StackableCarpet.layerCarpets()) {
+                textures.put(carpet, baker.materials().get(new Material(textureFor(carpet)),
                         () -> StackableCarpet.MIXED_CARPET_ID.toString()));
             }
             return new MixedCarpetModel(textures);
@@ -115,7 +123,7 @@ public class StackableCarpetClient implements ClientModInitializer {
 
         // Falls back to white carpet if the layers haven't arrived from the server yet
         private static List<Block> layers(BlockAndTintGetter level, BlockPos pos, BlockState state) {
-            int layers = state.getValue(CarpetStacking.LAYERS);
+            int layers = state.getValue(StackableCarpet.LAYERS);
             List<Block> carpets = level != null && level.getBlockEntityRenderData(pos) instanceof List<?> data ? castLayers(data) : List.of();
             if (carpets.size() >= layers) {
                 return carpets.subList(0, layers);
