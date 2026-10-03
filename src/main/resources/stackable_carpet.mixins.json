@@ -5,13 +5,10 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "CarpetStackMixin",
-    "PaleMossCarpetStackMixin",
-    "CarpetPlaceMixin",
-    "CarpetBreakMixin"
+    "PaleMossCarpetMixin"
   ],
   "client": [
-    "CarpetOutlineMixin",
-    "CarpetBreakPredictionMixin"
+    "CarpetOutlineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

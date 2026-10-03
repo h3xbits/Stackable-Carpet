@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 // Run with: ./gradlew runClientGameTest   (screenshots end up in build/run/clientGameTest/screenshots)
 public class CarpetClientGameTest implements FabricClientGameTest {
     private static final Logger LOGGER = LoggerFactory.getLogger("stackable_carpet-gametest");
-    private static final int SETTLE_TICKS = 10;
+    private static final int SETTLE_TICKS = 3;
     private static final BlockPos CARPET = new BlockPos(0, 100, 0);
     private static final Block WHITE = Blocks.CARPET.pick(DyeColor.WHITE);
     private static final Block GRAY = Blocks.CARPET.pick(DyeColor.GRAY);
@@ -67,6 +67,8 @@ public class CarpetClientGameTest implements FabricClientGameTest {
             TestServerContext server = singleplayer.getServer();
             server.runCommand("gamemode survival @a");
             server.runCommand("time set noon");
+            // Survival so breaking drops items, Haste so each layer takes 2 ticks of mining instead of 8
+            server.runCommand("effect give @a minecraft:haste infinite 255 true");
             context.waitTicks(SETTLE_TICKS);
 
             runBesideWoolCase(context, server);
@@ -348,8 +350,6 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         String onClient = context.computeOnClient((Minecraft client) -> describeAt(client.level, CARPET));
         boolean placeSound = sounds.stream().anyMatch(sound -> sound.endsWith(PLACE_SOUND));
         report.add(String.format("[%s] placed %s: server=%s client=%s placeSound=%s", name, shortName(carpet), onServer, onClient, placeSound));
-        context.takeScreenshot(name);
-
         if (!onServer.equals(want)) {
             failures.add(name + ": expected " + want + " on the server, got " + onServer);
         }
@@ -368,8 +368,8 @@ public class CarpetClientGameTest implements FabricClientGameTest {
                 Field field = LevelExtractor.class.getDeclaredField("levelRenderState");
                 field.setAccessible(true);
                 state = ((LevelRenderState) field.get(client.levelExtractor)).blockOutlineRenderState;
-            } catch (ReflectiveOperationException e) {
-                throw new RuntimeException(e);
+            } catch (ReflectiveOperationException exception) {
+                throw new RuntimeException(exception);
             }
             if (state == null || !state.pos().equals(CARPET) || state.shape().isEmpty()) {
                 return null;
@@ -379,7 +379,6 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         double wantMin = (layer - 1) / 16.0;
         double wantMax = layer / 16.0;
         report.add(String.format("[%s hover] outline=%s (want y %.4f..%.4f)", name, outline == null ? "none" : String.format("y %.4f..%.4f", outline.minY, outline.maxY), wantMin, wantMax));
-        context.takeScreenshot(name + "_hover");
 
         if (outline == null) {
             failures.add(name + ": no outline on the carpet");
@@ -398,12 +397,14 @@ public class CarpetClientGameTest implements FabricClientGameTest {
 
         context.getInput().holdKey(options -> options.keyAttack);
         int ticks = 0;
-        while (clientState(context).equals(before) && ticks < 100) {
+        while (clientState(context).equals(before) && ticks < 20) {
             context.waitTick();
             ticks++;
         }
         context.getInput().releaseKey(options -> options.keyAttack);
-        context.waitTicks(4);
+        // What the client shows the moment the layer goes - anything but the final stack would be a flicker
+        String firstSeen = context.computeOnClient((Minecraft client) -> describeAt(client.level, CARPET));
+        context.waitTicks(SETTLE_TICKS);
 
         String onServer = server.computeOnServer(minecraftServer -> describeAt(minecraftServer.overworld(), CARPET));
         String onClient = context.computeOnClient((Minecraft client) -> describeAt(client.level, CARPET));
@@ -422,10 +423,9 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         }
         boolean breakSound = sounds.stream().anyMatch(sound -> sound.endsWith(BREAK_SOUND));
         report.add(String.format("[%s break] took %d ticks, server=%s client=%s drops=%s breakSound=%s", name, ticks, onServer, onClient, drops, breakSound));
-        context.takeScreenshot(name + "_broken");
 
         String want = carpet(wantLeft);
-        if (ticks >= 100) {
+        if (ticks >= 20) {
             failures.add(name + ": holding attack never broke anything");
         }
         if (!onServer.equals(want)) {
@@ -433,6 +433,9 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         }
         if (!onClient.equals(onServer)) {
             failures.add(name + ": client " + onClient + " disagrees with server " + onServer);
+        }
+        if (!firstSeen.equals(want)) {
+            failures.add(name + ": flickered - the client showed " + firstSeen + " before " + want);
         }
         if (!drops.equals(wantDropCounts)) {
             failures.add(name + ": expected drops " + wantDropCounts + ", got " + drops);
@@ -461,7 +464,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
     // Turns the player's head on the client; the server picks up the rotation from the next movement packet
     private static void aimAt(ClientGameTestContext context, Vec3 target) {
         context.runOnClient(client -> client.player.lookAt(EntityAnchorArgument.Anchor.EYES, target));
-        context.waitTicks(3);
+        context.waitTicks(2);
     }
 
     private static BlockState clientState(ClientGameTestContext context) {

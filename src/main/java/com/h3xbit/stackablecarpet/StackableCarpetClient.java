@@ -40,8 +40,10 @@ public class StackableCarpetClient implements ClientModInitializer {
 
     // The texture the carpet's own model uses - its full block's, except pale moss carpet has its own
     public static Identifier textureFor(Block carpet) {
-        Block textured = carpet == Blocks.PALE_MOSS_CARPET ? carpet : StackableCarpet.fullBlockFor(carpet);
-        return BuiltInRegistries.BLOCK.getKey(textured).withPrefix("block/");
+        if (carpet == Blocks.PALE_MOSS_CARPET) {
+            return BuiltInRegistries.BLOCK.getKey(carpet).withPrefix("block/");
+        }
+        return BuiltInRegistries.BLOCK.getKey(StackableCarpet.fullBlockFor(carpet)).withPrefix("block/");
     }
 
     private static class UnbakedMixedCarpetModel implements BlockStateModel.UnbakedRoot {
@@ -86,33 +88,41 @@ public class StackableCarpetClient implements ClientModInitializer {
 
         @Override
         public Material.Baked particleMaterial(BlockAndTintGetter level, BlockPos pos, BlockState state) {
-            return textures.get(layers(level, pos, state).getLast());
+            return textures.get(layersOf(level, pos, state).getLast());
         }
 
         @Override
         public void emitQuads(QuadEmitter emitter, BlockAndTintGetter level, BlockPos pos, BlockState state, RandomSource random, Predicate<@Nullable Direction> cullTest) {
-            List<Block> carpets = layers(level, pos, state);
-            int layers = carpets.size();
-            for (int i = 0; i < layers; i++) {
-                Material.Baked material = textures.get(carpets.get(i));
+            List<Block> layers = layersOf(level, pos, state);
+            for (int i = 0; i < layers.size(); i++) {
+                Material.Baked material = textures.get(layers.get(i));
                 float bottom = i / 16.0F;
                 float top = (i + 1) / 16.0F;
+
                 if (i == 0 && !cullTest.test(Direction.DOWN)) {
-                    emitFace(emitter, material, Direction.DOWN, 0, 0, 1, 1, 0, Direction.DOWN);
+                    emitFace(emitter, material, Direction.DOWN, 0, 1, 0, Direction.DOWN);
                 }
-                if (i == layers - 1 && !(top == 1 && cullTest.test(Direction.UP))) {
-                    emitFace(emitter, material, Direction.UP, 0, 0, 1, 1, 1 - top, top == 1 ? Direction.UP : null);
+
+                // The top of the stack - only hidden by the block above when the stack is a full block tall
+                if (i == layers.size() - 1) {
+                    if (top < 1) {
+                        emitFace(emitter, material, Direction.UP, 0, 1, 1 - top, null);
+                    } else if (!cullTest.test(Direction.UP)) {
+                        emitFace(emitter, material, Direction.UP, 0, 1, 0, Direction.UP);
+                    }
                 }
+
                 for (Direction side : Direction.Plane.HORIZONTAL) {
                     if (!cullTest.test(side)) {
-                        emitFace(emitter, material, side, 0, bottom, 1, top, 0, side);
+                        emitFace(emitter, material, side, bottom, top, 0, side);
                     }
                 }
             }
         }
 
-        private static void emitFace(QuadEmitter emitter, Material.Baked material, Direction face, float left, float bottom, float right, float top, float depth, @Nullable Direction cullFace) {
-            emitter.square(face, left, bottom, right, top, depth);
+        // A face the full width of the block, from bottom to top on it
+        private static void emitFace(QuadEmitter emitter, Material.Baked material, Direction face, float bottom, float top, float depth, @Nullable Direction cullFace) {
+            emitter.square(face, 0, bottom, 1, top, depth);
             // cullFace() also overwrites the nominal face, which BAKE_LOCK_UV needs - a null cull face left the top face with no UVs
             emitter.cullFace(cullFace);
             emitter.nominalFace(face);
@@ -121,19 +131,14 @@ public class StackableCarpetClient implements ClientModInitializer {
             emitter.emit();
         }
 
-        // Falls back to white carpet if the layers haven't arrived from the server yet
-        private static List<Block> layers(BlockAndTintGetter level, BlockPos pos, BlockState state) {
-            int layers = state.getValue(StackableCarpet.LAYERS);
-            List<Block> carpets = level != null && level.getBlockEntityRenderData(pos) instanceof List<?> data ? castLayers(data) : List.of();
-            if (carpets.size() >= layers) {
-                return carpets.subList(0, layers);
-            }
-            return Collections.nCopies(layers, DEFAULT_LAYER);
-        }
-
+        // The stack's layers from its block entity - white carpet if they haven't arrived from the server yet
         @SuppressWarnings("unchecked")
-        private static List<Block> castLayers(List<?> data) {
-            return (List<Block>) data;
+        private static List<Block> layersOf(BlockAndTintGetter level, BlockPos pos, BlockState state) {
+            int count = state.getValue(StackableCarpet.LAYERS);
+            if (level != null && level.getBlockEntityRenderData(pos) instanceof List<?> renderData && renderData.size() >= count) {
+                return ((List<Block>) renderData).subList(0, count);
+            }
+            return Collections.nCopies(count, DEFAULT_LAYER);
         }
     }
 }

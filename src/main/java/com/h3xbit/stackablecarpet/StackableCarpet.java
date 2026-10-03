@@ -14,11 +14,9 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarpetBlock;
@@ -41,8 +39,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-// The stacking itself lives in the mixins - this holds what more than one of them needs: the layers
-// property, the mixed carpet, and looking up what a stack is made of.
+// What CarpetStackMixin, PaleMossCarpetMixin and the rest of the mod share: the layers property, the mixed carpet,
+// and what a stack is made of. The stacking itself lives in the mixins.
 public class StackableCarpet implements ModInitializer {
     public static final String MOD_ID = "stackable_carpet";
 
@@ -63,6 +61,8 @@ public class StackableCarpet implements ModInitializer {
     // Set in onInitialize() - the mixins load this class while vanilla's own blocks are still being created
     public static Block MIXED_CARPET;
     public static BlockEntityType<MixedCarpetEntity> MIXED_CARPET_ENTITY;
+    // Layers for a mixed stack being placed - from either mixin's getStateForPlacement() to the mixed carpet's setPlacedBy()
+    public static final ThreadLocal<List<Block>> PENDING_LAYERS = new ThreadLocal<>();
 
     @Override
     public void onInitialize() {
@@ -132,11 +132,14 @@ public class StackableCarpet implements ModInitializer {
     // One carpet all the way up is a plain carpet stack, anything else a mixed one
     public static BlockState stateFor(List<Block> layers) {
         Block first = layers.getFirst();
-        Block block = layers.stream().allMatch(layer -> layer == first) ? first : MIXED_CARPET;
-        return block.defaultBlockState().setValue(LAYERS, layers.size());
+
+        if (layers.stream().allMatch(layer -> layer == first)) {
+            return first.defaultBlockState().setValue(LAYERS, layers.size());
+        }
+        return MIXED_CARPET.defaultBlockState().setValue(LAYERS, layers.size());
     }
 
-    public static void place(Level level, BlockPos pos, List<Block> layers) {
+    public static void place(LevelAccessor level, BlockPos pos, List<Block> layers) {
         level.setBlock(pos, stateFor(layers), Block.UPDATE_ALL);
         if (level.getBlockEntity(pos) instanceof MixedCarpetEntity entity) {
             entity.setLayers(layers);
@@ -150,19 +153,6 @@ public class StackableCarpet implements ModInitializer {
             return Math.max(1, Math.min(layers, (int) Math.ceil(localY * 16.0)));
         }
         return layers;
-    }
-
-    // Who can go on top of a stack: a layer carpet onto a stack of layer carpets, otherwise only the same carpet
-    public static boolean canStackOnto(BlockState state, BlockPlaceContext context) {
-        if (!(context.getItemInHand().getItem() instanceof BlockItem blockItem)) {
-            return false;
-        }
-        Block held = blockItem.getBlock();
-        int layers = state.getValue(LAYERS);
-        if (isLayerCarpet(state.getBlock()) || state.getBlock() instanceof MixedCarpet) {
-            return isLayerCarpet(held) && layers < MAX_LAYERS;
-        }
-        return held == state.getBlock() && layers < MAX_SINGLE_COLOR_LAYERS;
     }
 
     // Only here because a block needs its own class to have a block entity - the mixins give it everything else
