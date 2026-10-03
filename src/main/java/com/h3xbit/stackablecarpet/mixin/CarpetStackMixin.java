@@ -1,6 +1,7 @@
 package com.h3xbit.stackablecarpet.mixin;
 
 import com.h3xbit.stackablecarpet.StackableCarpet;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -21,8 +22,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,9 +35,9 @@ public abstract class CarpetStackMixin extends Block {
         super(properties);
     }
 
-    @Inject(method = "getShape", at = @At("RETURN"), cancellable = true)
-    private void layeredShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
-        cir.setReturnValue(StackableCarpet.shapeFor(state.getValue(StackableCarpet.LAYERS)));
+    @ModifyReturnValue(method = "getShape", at = @At("RETURN"))
+    private VoxelShape layeredShape(VoxelShape vanillaShape, BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return StackableCarpet.shapeFor(state.getValue(StackableCarpet.LAYERS));
     }
 
     @Override

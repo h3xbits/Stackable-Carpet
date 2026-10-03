@@ -3,6 +3,7 @@ package com.h3xbit.stackablecarpet.mixin;
 import com.h3xbit.stackablecarpet.StackableCarpet;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.MossyCarpetBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.WallSide;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -25,7 +27,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,11 +51,23 @@ public abstract class PaleMossCarpetMixin extends Block {
         builder.add(StackableCarpet.LAYERS);
     }
 
-    @Inject(method = {"getShape", "getCollisionShape"}, at = @At("RETURN"), cancellable = true)
-    private void addLayeredShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
-        if (state.getValue(MossyCarpetBlock.BASE)) {
-            cir.setReturnValue(Shapes.or(cir.getReturnValue(), StackableCarpet.shapeFor(state.getValue(StackableCarpet.LAYERS))));
+    // Called constantly (crosshair, movement collision), so it builds no new shape unless it really has to
+    @ModifyReturnValue(method = {"getShape", "getCollisionShape"}, at = @At("RETURN"))
+    private VoxelShape addLayeredShape(VoxelShape vanillaShape, BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        // A single pale moss carpet - every one the world generates - keeps vanilla's shape
+        if (!state.getValue(MossyCarpetBlock.BASE) || state.getValue(StackableCarpet.LAYERS) == 1) {
+            return vanillaShape;
         }
+
+        VoxelShape stackShape = StackableCarpet.shapeFor(state.getValue(StackableCarpet.LAYERS));
+
+        // Only a stack with moss hanging off its sides needs that moss added to its shape
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            if (state.getValue(MossyCarpetBlock.getPropertyForFace(side)) != WallSide.NONE) {
+                return Shapes.or(vanillaShape, stackShape);
+            }
+        }
+        return stackShape;
     }
 
     // Any layer carpet can go onto a pale moss carpet stack
