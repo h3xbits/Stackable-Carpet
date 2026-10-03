@@ -3,10 +3,10 @@
   "id": "stackable_carpet",
   "version": "${version}",
   "name": "Stackable Carpet",
-  "description": "Carpets stack up to 15 layers high. Breaking removes the layer you aim at, and a full wool carpet stack turns into a wool block.",
+  "description": "Stack carpets in 1/16 layers. Mix any colors, moss and pale moss carpet into one stack up to a full block - 16 of the same carpet turn into its full block. Breaking takes the layer you aim at and everything above it.",
   "authors": ["h3xbits"],
-  "contact": {},
-  "license": "All-Rights-Reserved",
+  "license": "LicenseRef-Stackable-Carpet (MIT, no selling)",
+  "icon": "assets/stackable_carpet/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
