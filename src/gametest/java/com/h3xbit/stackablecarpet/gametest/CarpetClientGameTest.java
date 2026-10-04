@@ -16,17 +16,19 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.MapItem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +63,9 @@ public class CarpetClientGameTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext context) {
+        if (ShowcaseClientGameTest.enabled() || MapClientGameTest.enabled()) {
+            return;
+        }
         SoundEventListener listener = (sound, events, range) -> sounds.add(sound.getIdentifier().toString());
         context.runOnClient(client -> client.getSoundManager().addListener(listener));
 
@@ -85,15 +90,13 @@ public class CarpetClientGameTest implements FabricClientGameTest {
                 runBreakFromSideCase(context, server, moss, 1);
             }
 
-            runGrowthCases(context, server);
-
             runMixedPlaceCase(context, server);
             runMixedOntoFullSingleColorCase(context, server);
             runMixedBreakFromTopCase(context, server);
             for (int layer = 1; layer <= StackableCarpet.MAX_LAYERS; layer++) {
                 runMixedBreakFromSideCase(context, server, layer);
             }
-            runMixedPickAndMapCase(context, server);
+            runMixedPickCase(context, server);
             runMixedShowcase(context, server);
         } finally {
             context.runOnClient(client -> client.getSoundManager().removeListener(listener));
@@ -170,90 +173,6 @@ public class CarpetClientGameTest implements FabricClientGameTest {
                 Collections.nCopies(StackableCarpet.MAX_SINGLE_COLOR_LAYERS - layer + 1, carpet));
     }
 
-    // Vanilla growth with real bone meal clicks: moss and pale moss blocks spread and grow carpets on top,
-    // pale moss carpet grows hanging moss up a wall next to it - also when it's a stack
-    private void runGrowthCases(ClientGameTestContext context, TestServerContext server) {
-        for (Block moss : List.of(Blocks.MOSS_BLOCK, Blocks.PALE_MOSS_BLOCK)) {
-            String name = "grow_" + shortName(moss);
-            resetArea(context, server);
-            server.runOnServer(minecraftServer -> minecraftServer.overworld().setBlock(CARPET.below(), moss.defaultBlockState(), 3));
-            standAt(context, server, 2.5);
-            boneMeal(context, server, new Vec3(CARPET.getX() + 0.5, CARPET.getY(), CARPET.getZ() + 0.5));
-            Map<String, Integer> grown = countAround(server, -1, 1);
-            report.add(String.format("[%s] around: %s", name, grown));
-            context.takeScreenshot(name);
-            Block carpet = moss == Blocks.MOSS_BLOCK ? Blocks.MOSS_CARPET : Blocks.PALE_MOSS_CARPET;
-            if (grown.getOrDefault(shortName(moss), 0) < 2) {
-                failures.add(name + ": the " + shortName(moss) + " didn't spread - " + grown);
-            }
-            if (grown.getOrDefault(shortName(carpet), 0) < 1) {
-                failures.add(name + ": no " + shortName(carpet) + " grew on top - " + grown);
-            }
-        }
-
-        for (int layers : new int[]{1, 4}) {
-            for (boolean byPlacing : new boolean[]{false, true}) {
-                String name = "grow_pale_moss_carpet_" + layers + (byPlacing ? "_placed" : "_bone_meal");
-                resetArea(context, server);
-                server.runCommand(String.format("fill %d %d %d %d %d %d minecraft:stone", CARPET.getX(), CARPET.getY(), CARPET.getZ() - 1, CARPET.getX(), CARPET.getY() + 2, CARPET.getZ() - 1));
-                standAt(context, server, 2.5);
-                if (byPlacing) {
-                    if (layers > 1) {
-                        setStack(server, Collections.nCopies(layers - 1, Blocks.PALE_MOSS_CARPET));
-                    }
-                    // Placing has a random chance to grow, so place, break and retry a few times
-                    boolean grew = false;
-                    for (int attempt = 0; attempt < 12 && !grew; attempt++) {
-                        server.runCommand(String.format("setblock %d %d %d minecraft:air", CARPET.getX(), CARPET.getY() + 1, CARPET.getZ()));
-                        if (layers > 1) {
-                            setStack(server, Collections.nCopies(layers - 1, Blocks.PALE_MOSS_CARPET));
-                        } else {
-                            server.runCommand(String.format("setblock %d %d %d minecraft:air", CARPET.getX(), CARPET.getY(), CARPET.getZ()));
-                        }
-                        context.waitTicks(2);
-                        placeOnTop(context, server, name + "_attempt_" + attempt, Blocks.PALE_MOSS_CARPET, carpet(Collections.nCopies(layers, Blocks.PALE_MOSS_CARPET)));
-                        grew = !server.computeOnServer(minecraftServer -> minecraftServer.overworld().getBlockState(CARPET.above()).isAir());
-                    }
-                } else {
-                    setStack(server, Collections.nCopies(layers, Blocks.PALE_MOSS_CARPET));
-                    context.waitTicks(2);
-                    boneMeal(context, server, new Vec3(CARPET.getX() + 0.5, CARPET.getY() + layers / 16.0, CARPET.getZ() + 0.5));
-                }
-                String below = server.computeOnServer(minecraftServer -> describeAt(minecraftServer.overworld(), CARPET));
-                String above = server.computeOnServer(minecraftServer -> minecraftServer.overworld().getBlockState(CARPET.above()).toString());
-                report.add(String.format("[%s] carpet=%s above=%s", name, below, above));
-                context.takeScreenshot(name);
-                if (!above.contains("pale_moss_carpet") || !above.contains("north=")) {
-                    failures.add(name + ": no hanging moss grew up the wall above - " + above);
-                }
-                if (!below.equals(carpet(Collections.nCopies(layers, Blocks.PALE_MOSS_CARPET)))) {
-                    failures.add(name + ": the carpet itself changed - " + below);
-                }
-            }
-        }
-    }
-
-    private void boneMeal(ClientGameTestContext context, TestServerContext server, Vec3 target) {
-        server.runCommand("item replace entity @a hotbar.0 with minecraft:bone_meal 64");
-        aimAt(context, target);
-        context.getInput().holdKeyFor(options -> options.keyUse, 1);
-        context.waitTicks(SETTLE_TICKS);
-    }
-
-    // Blocks by name in the area around CARPET, from yFrom to yTo relative to it
-    private static Map<String, Integer> countAround(TestServerContext server, int yFrom, int yTo) {
-        return server.computeOnServer(minecraftServer -> {
-            Map<String, Integer> counted = new TreeMap<>();
-            for (BlockPos pos : BlockPos.betweenClosed(CARPET.offset(-5, yFrom, -5), CARPET.offset(5, yTo, 5))) {
-                BlockState state = minecraftServer.overworld().getBlockState(pos);
-                if (!state.isAir() && !state.is(Blocks.STONE)) {
-                    counted.merge(shortName(state.getBlock()), 1, Integer::sum);
-                }
-            }
-            return counted;
-        });
-    }
-
     // White, gray on top, gray again, moss, ... each layer keeps its carpet, all the way to 16; a full mixed
     // stack doesn't become a full block, the next carpet goes on the block above instead
     private void runMixedPlaceCase(ClientGameTestContext context, TestServerContext server) {
@@ -311,19 +230,12 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         breakAimed(context, server, name, MIXED.subList(0, layer - 1), MIXED.subList(layer - 1, MIXED.size()));
     }
 
-    // A few stacks next to wool and moss blocks, for the screenshots
-    private void runMixedPickAndMapCase(ClientGameTestContext context, TestServerContext server) {
+    // Middle-click picks the carpet in the aimed layer of a mixed stack
+    private void runMixedPickCase(ClientGameTestContext context, TestServerContext server) {
         resetArea(context, server);
         setStack(server, MIXED);
         standAt(context, server, 3.5);
         server.runCommand("gamemode creative @a");
-
-        // A mixed stack shows on maps as its top carpet
-        MapColor mapColor = server.computeOnServer(minecraftServer -> minecraftServer.overworld().getBlockState(CARPET).getMapColor(minecraftServer.overworld(), CARPET));
-        report.add(String.format("[mixed_map_color] got %s, top carpet %s", mapColor.id, MIXED.getLast().defaultMapColor().id));
-        if (mapColor != MIXED.getLast().defaultMapColor()) {
-            failures.add("mixed_map_color: the map color isn't the top carpet's");
-        }
 
         // Middle-click picks the carpet in the aimed layer
         for (int layer : new int[]{1, 5, 16}) {
@@ -368,7 +280,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
 
     // Right-clicks this carpet onto the top of whatever is at CARPET
     private void placeOnTop(ClientGameTestContext context, TestServerContext server, String name, Block carpet, String want) {
-        server.runCommand("item replace entity @a hotbar.0 with " + BuiltInRegistries.BLOCK.getKey(carpet) + " 64");
+        server.runCommand("item replace entity @a weapon.mainhand with " + BuiltInRegistries.BLOCK.getKey(carpet) + " 64");
         int layers = server.computeOnServer(minecraftServer -> {
             BlockState state = minecraftServer.overworld().getBlockState(CARPET);
             return state.hasProperty(StackableCarpet.LAYERS) ? state.getValue(StackableCarpet.LAYERS) : 0;

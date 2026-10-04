@@ -22,8 +22,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -39,11 +37,6 @@ public abstract class PaleMossCarpetMixin extends Block {
 
     private PaleMossCarpetMixin(Properties properties) {
         super(properties);
-    }
-
-    @Shadow
-    private static BlockState getUpdatedState(BlockState state, BlockGetter level, BlockPos pos, boolean placing) {
-        throw new AssertionError();
     }
 
     @Inject(method = "createBlockStateDefinition", at = @At("TAIL"))
@@ -173,21 +166,5 @@ public abstract class PaleMossCarpetMixin extends Block {
 
         // Nothing drops when only the aimed layer broke - popResource() ignores an empty stack
         Block.popResource(level, pos, new ItemStack(this, state.getValue(StackableCarpet.LAYERS) - layersLeft - 1));
-    }
-
-    // Hanging moss only grows above sides the carpet has moss on, and vanilla only works those out when it's
-    // placed - so work them out again whenever a stack forms or gets taller
-    @Override
-    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
-        super.onPlace(state, level, pos, oldState, movedByPiston);
-
-        if (state.getValue(MossyCarpetBlock.BASE) && grewTaller(state, oldState)) {
-            level.setBlock(pos, getUpdatedState(state, level, pos, true), Block.UPDATE_CLIENTS);
-        }
-    }
-
-    @Unique
-    private static boolean grewTaller(BlockState state, BlockState oldState) {
-        return !oldState.is(state.getBlock()) || oldState.getValue(StackableCarpet.LAYERS) < state.getValue(StackableCarpet.LAYERS);
     }
 }

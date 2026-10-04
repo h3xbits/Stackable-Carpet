@@ -6,7 +6,9 @@
   "environment": "*",
   "entrypoints": {
     "fabric-client-gametest": [
-      "com.h3xbit.stackablecarpet.gametest.CarpetClientGameTest"
+      "com.h3xbit.stackablecarpet.gametest.CarpetClientGameTest",
+      "com.h3xbit.stackablecarpet.gametest.ShowcaseClientGameTest",
+      "com.h3xbit.stackablecarpet.gametest.MapClientGameTest"
     ]
   },
   "mixins": [
