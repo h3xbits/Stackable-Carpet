@@ -17,9 +17,6 @@ tasks.withType(AbstractArchiveTask).configureEach {
 
 
 fabricApi {
-    configureDataGeneration {
-        client = true
-    }
     configureTests {
         createSourceSet = true
         modId = "stackable_carpet-gametest"
@@ -41,11 +38,11 @@ loom {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
+    // Polymer: lets players without the mod join (they see vanilla look-alikes)
+    maven {
+        name = "Nucleoid"
+        url = "https://maven.nucleoid.xyz/"
+    }
 }
 
 dependencies {
@@ -54,6 +51,9 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation include("eu.pb4:polymer-bundled:${project.polymer_version}")
+    // Optional: names carpet stacks in Polydex's hover display when the server has it
+    compileOnly "eu.pb4:polydex:${project.polydex_version}"
 }
 
 processResources {

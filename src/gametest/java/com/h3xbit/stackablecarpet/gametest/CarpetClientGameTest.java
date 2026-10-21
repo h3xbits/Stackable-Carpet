@@ -283,7 +283,7 @@ public class CarpetClientGameTest implements FabricClientGameTest {
         server.runCommand("item replace entity @a weapon.mainhand with " + BuiltInRegistries.BLOCK.getKey(carpet) + " 64");
         int layers = server.computeOnServer(minecraftServer -> {
             BlockState state = minecraftServer.overworld().getBlockState(CARPET);
-            return state.hasProperty(StackableCarpet.LAYERS) ? state.getValue(StackableCarpet.LAYERS) : 0;
+            return StackableCarpet.layersAt(minecraftServer.overworld(), CARPET, state).size();
         });
         aimAt(context, new Vec3(CARPET.getX() + 0.5, CARPET.getY() + layers / 16.0, CARPET.getZ() + 0.5));
 

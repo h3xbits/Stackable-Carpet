@@ -3,7 +3,7 @@
   "id": "stackable_carpet",
   "version": "${version}",
   "name": "Stackable Carpet",
-  "description": "Stack carpets in 1/16 layers. Mix any colors, moss and pale moss carpet into one stack up to a full block - 16 of the same carpet turn into its full block. Breaking takes the layer you aim at and everything above it.",
+  "description": "Stack carpets in 1/16 layers. Mix any colors, moss and pale moss carpet into one stack up to a full block - 16 of the same carpet turn into its full block. Breaking takes the layer you aim at and everything above it. Runs through Polymer, so players on plain Minecraft can join a server with it.",
   "authors": ["h3xbits"],
   "license": "LicenseRef-Stackable-Carpet (MIT, no selling)",
   "icon": "assets/stackable_carpet/icon.png",
@@ -11,12 +11,6 @@
   "entrypoints": {
     "main": [
       "com.h3xbit.stackablecarpet.StackableCarpet"
-    ],
-    "client": [
-      "com.h3xbit.stackablecarpet.StackableCarpetClient"
-    ],
-    "fabric-datagen": [
-      "com.h3xbit.stackablecarpet.StackableCarpetDataGenerator"
     ]
   },
   "mixins": [

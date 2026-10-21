@@ -101,10 +101,7 @@ public class MapClientGameTest implements FabricClientGameTest {
 
         int layers = server.computeOnServer(minecraftServer -> {
             BlockState state = minecraftServer.overworld().getBlockState(pos);
-            if (state.hasProperty(StackableCarpet.LAYERS)) {
-                return state.getValue(StackableCarpet.LAYERS);
-            }
-            return 0;
+            return StackableCarpet.layersAt(minecraftServer.overworld(), pos, state).size();
         });
         Vec3 topOfStack = new Vec3(pos.getX() + 0.5, pos.getY() + layers / 16.0, pos.getZ() + 0.5);
         context.runOnClient(client -> client.player.lookAt(EntityAnchorArgument.Anchor.EYES, topOfStack));
