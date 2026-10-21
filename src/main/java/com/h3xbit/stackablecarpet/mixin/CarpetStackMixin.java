@@ -1,6 +1,7 @@
 package com.h3xbit.stackablecarpet.mixin;
 
 import com.h3xbit.stackablecarpet.StackableCarpet;
+import com.h3xbit.stackablecarpet.StackableCarpetConfig;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
@@ -71,10 +72,10 @@ public abstract class CarpetStackMixin extends Block {
             return defaultBlockState();
         }
 
-        // The same carpet adds a layer - the 16th turns the stack into its full block
+        // The same carpet adds a layer - the 16th turns the stack into its full block (unless the config turned that off)
         if (existing.is(this)) {
             int layers = existing.getValue(StackableCarpet.LAYERS);
-            if (layers < StackableCarpet.MAX_SINGLE_COLOR_LAYERS) {
+            if (layers < StackableCarpet.MAX_SINGLE_COLOR_LAYERS || !StackableCarpetConfig.fullBlockConversion) {
                 return existing.setValue(StackableCarpet.LAYERS, layers + 1);
             }
 

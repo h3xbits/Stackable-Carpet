@@ -1,6 +1,7 @@
 package com.h3xbit.stackablecarpet.mixin;
 
 import com.h3xbit.stackablecarpet.StackableCarpet;
+import com.h3xbit.stackablecarpet.StackableCarpetConfig;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -89,7 +90,7 @@ public abstract class PaleMossCarpetMixin extends Block {
 
         if (existing.is(this)) {
             int layers = existing.getValue(StackableCarpet.LAYERS);
-            if (layers < StackableCarpet.MAX_SINGLE_COLOR_LAYERS) {
+            if (layers < StackableCarpet.MAX_SINGLE_COLOR_LAYERS || !StackableCarpetConfig.fullBlockConversion) {
                 return placed.setValue(StackableCarpet.LAYERS, layers + 1);
             }
             return Blocks.PALE_MOSS_BLOCK.defaultBlockState();

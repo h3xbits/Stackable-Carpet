@@ -68,6 +68,9 @@ public class StackableCarpet implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        StackableCarpetConfig.load();
+        StackableCarpetConfig.registerCommand();
+
         MIXED_CARPET = Registry.register(BuiltInRegistries.BLOCK, MIXED_CARPET_ID,
                 new MixedCarpet(BlockBehaviour.Properties.ofFullCopy(Blocks.CARPET.pick(DyeColor.WHITE))
                         .mapColor(state -> layerCarpets().get(state.getValue(MixedCarpet.TOP)).defaultMapColor())
